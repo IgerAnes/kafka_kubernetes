@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kafka-cluster
+  labels:
+    app: kafka-cluster
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-zookeeper
+  namespace: kafka-cluster
+  labels:
+    app: kafka-zookeeper
+    version: 7.0.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      labels:
+        app: kafka-zookeeper
+  template:
+    metadata:
+      labels:
+        app: kafka-zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:7.0.1
+        ports:
+        - containerPort: 2181
+        env:
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: 2181
+        - name: ZOOKEEPER_TICK_TIME
+          value: 2000
+        volumeMounts:
+        - name: zookeeper
+          mountPath: /kafka/zookeeper
+      volumes:
+      - name: zookeeper
+        emptyDir: {}
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka-zookeeper-svc
+  name: kafka-zookeeper-svc
+  namespace: kafka-cluster
+spec:
+  selector:
+    matchLabels:
+      app: kafka-zookeeper
+  ports:
+    - port: 2181
+      targetPort: 2181
+  type: ClusterIP
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-broker
+  namespace: kafka-cluster
+  labels:
+    app: kafka-broker
+    version: 7.0.1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      labels:
+        app: kafka-broker
+  template:
+    metadata:
+      labels:
+        app: kafka-broker
+    spec:
+      containers:
+      - name: broker
+        image: confluentinc/cp-kafka:7.0.1
+        ports:
+        - containerPort: 9092  # origin port used by consumer or producer
+        - containerPort: 29092 # origin port for docker network
+        env:
+        - name: KAFKA_BROKER_ID
+          value: 1
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          value: 'kafka-zookeeper-svc:2181' # kafka-zookeeper service name and port
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: PLAINTEXT://kafka-broker-svc:9092,PLAINTEXT_INTERNAL://kafka-broker-svc:29092 # kafka-broker service name and port
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: 1
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: 1
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: 1
+        volumeMounts:
+        - name: broker
+          mountPath: /kafka/broker
+      volumes:
+      - name: broker
+        emptyDir: {}
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kafka-broker-svc
+  name: kafka-broker-svc
+  namespace: kafka-cluster
+spec:
+  selector:
+    matchLabels:
+      app: kafka-broker
+  ports:
+    - name: kafka-broker-port
+      port: 9092
+      targetPort: 9092
+    - name: kafka-broker-internal-port
+      port: 29092
+      targetPort: 29092
+  type: ClusterIP
+
+    
