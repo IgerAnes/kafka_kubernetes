@@ -18,8 +18,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      labels:
-        app: kafka-zookeeper
+      app: kafka-zookeeper
   template:
     metadata:
       labels:
@@ -32,9 +31,9 @@ spec:
         - containerPort: 2181
         env:
         - name: ZOOKEEPER_CLIENT_PORT
-          value: 2181
+          value: "2181"
         - name: ZOOKEEPER_TICK_TIME
-          value: 2000
+          value: "2000"
         volumeMounts:
         - name: zookeeper
           mountPath: /kafka/zookeeper
@@ -52,8 +51,7 @@ metadata:
   namespace: kafka-cluster
 spec:
   selector:
-    matchLabels:
-      app: kafka-zookeeper
+    app: kafka-zookeeper
   ports:
     - port: 2181
       targetPort: 2181
@@ -72,8 +70,7 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      labels:
-        app: kafka-broker
+      app: kafka-broker
   template:
     metadata:
       labels:
@@ -87,19 +84,19 @@ spec:
         - containerPort: 29092 # origin port for docker network
         env:
         - name: KAFKA_BROKER_ID
-          value: 1
+          value: "1"
         - name: KAFKA_ZOOKEEPER_CONNECT
-          value: 'kafka-zookeeper-svc:2181' # kafka-zookeeper service name and port
+          value: "kafka-zookeeper-svc:2181" # kafka-zookeeper service name and port
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
           value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
         - name: KAFKA_ADVERTISED_LISTENERS
           value: PLAINTEXT://kafka-broker-svc:9092,PLAINTEXT_INTERNAL://kafka-broker-svc:29092 # kafka-broker service name and port
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
-          value: 1
+          value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
-          value: 1
+          value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
-          value: 1
+          value: "1"
         volumeMounts:
         - name: broker
           mountPath: /kafka/broker
@@ -117,8 +114,7 @@ metadata:
   namespace: kafka-cluster
 spec:
   selector:
-    matchLabels:
-      app: kafka-broker
+    app: kafka-broker
   ports:
     - name: kafka-broker-port
       port: 9092
